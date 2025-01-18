@@ -11,7 +11,7 @@ const generateToken = (user) => {
 };
 
 // Register User
-const registerUser = async (req, res) => {
+exports.registerUser = async (req, res) => {
   try {
     const { username, email, password, name, age, country, province, whatsappNumber, profileImage } = req.body;
 
@@ -60,7 +60,7 @@ const registerUser = async (req, res) => {
 };
 
 // Login User
-const loginUser = async (req, res) => {
+exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -99,4 +99,3 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser };

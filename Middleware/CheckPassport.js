@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 // Middleware to authenticate token
 exports.authenticateToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+  const token = req.headers['authorization']?.split(' ')[1]; 
   if (!token) {
     return res.status(401).json({ message: 'Access Token Required' });
   }

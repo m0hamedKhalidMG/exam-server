@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const { PORT, MONGO_URI } = require('./config');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const examRoutes = require('./routes/exam');
+
 const app = express();
 const { authenticateToken, isAuthenticated, isAdmin } = require('./Middleware/CheckPassport');
 
@@ -25,6 +27,7 @@ app.use(function (req, res, next) {
 });
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/exam', examRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
