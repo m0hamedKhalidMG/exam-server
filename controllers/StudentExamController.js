@@ -1,81 +1,141 @@
 const Exam = require('../model/Exam');
 const StudentExam = require('../model/StudentExam');
 
+exports.getAllExamsforstudent = async (req, res) => {
+  try {
+    const options = {
+      timeZone: "Europe/Bucharest",
+      weekday: "short",
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    };
+    const currentDate = new Date();
+    const formattedCurrentDate = new Intl.DateTimeFormat("en-US", options).format(currentDate);
+    console.log("Current Date:", formattedCurrentDate);
 
+    const exams = await Exam.find().populate('createdBy', 'username email');
+   
+
+    const filteredExams1 = exams.filter((exam) => new Date(exam.endDateTime) >= currentDate);
+    const filteredExams = filteredExams1.filter((exam) => new Date(exam.startDateTime) <= currentDate);
+
+
+
+    res.status(200).json(filteredExams);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching exams', error: error.message });
+  }
+};
 
 
 
 exports.startExam = async (req, res) => {
-    try {
-      const { examId } = req.body;
-      const exam = await Exam.findById(examId);
-  
-      if (!exam) {
-        return res.status(404).json({ message: 'Exam not found' });
-      }
-      const now = new Date();
-      const options = { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      
-      // Format the date to Riyadh timezone
-      const formatter = new Intl.DateTimeFormat('en-US', options);
-      const date = new Date(formatter.format(now));
+  try {
+    const { userId, examId } = req.body;
+    const exam = await Exam.findById(examId);
+    const existingExam = await StudentExam.findOne({ userId, examId });
 
-      // console.log(formatter.format(now))
-    //   console.log(exam.startDateTime)
-
-      if (date < new Date(exam.startDateTime) || now > new Date(exam.endDateTime)) {
-        return res.status(400).json({ message: 'Exam is not available at this time' });
-      }
-  
-      const studentExam = new StudentExam({
-        userId: req.user._id,
-        examId,
-        startTime: now,
-        endTime: new Date(now.getTime() + exam.timer * 60000),
-      });
-  
-      await studentExam.save();
-      res.status(201).json({ message: 'Exam started', studentExam });
-    } catch (error) {
-      res.status(500).json({ message: 'Error starting exam', error: error.message });
+    if (existingExam) {
+      return res.status(400).json({ message: 'You have already started this exam.' });
     }
-  };
-  
+
+    if (!exam) {
+      return res.status(404).json({ message: 'Exam not found' });
+    }
+
+    const options = {
+      timeZone: "Europe/Bucharest",
+      weekday: "short",
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    };
+
+    // Convert the date strings to Date objects
+    const dateObjstartDateTime = new Date(exam.startDateTime);
+    const dateObjendDateTime = new Date(exam.endDateTime);
+
+    // Get the current date and time
+    const currentDate = new Date();
+    const formattedCurrentDate = new Intl.DateTimeFormat("en-US", options).format(currentDate);
+
+    // Check if the exam is available at this time
+    if (currentDate < dateObjstartDateTime || currentDate > dateObjendDateTime) {
+      return res.status(400).json({ message: 'Exam is not available at this time' });
+    }
+
+    // Calculate the end time of the exam
+    const endTime = new Date(currentDate.getTime() + exam.timer * 60000);
+    const formattedEndTime = new Intl.DateTimeFormat("en-US", options).format(endTime);
+
+    const studentExam = new StudentExam({
+      userId,
+      examId,
+      startTime: formattedCurrentDate,
+      endTime: formattedEndTime,
+    });
+
+    await studentExam.save();
+    res.status(201).json({ message: 'Exam started', studentExam });
+  } catch (error) {
+    res.status(500).json({ message: 'Error starting exam', error: error.message });
+  }
+};
+
 
 
 // Submit an exam
 exports.submitExam = async (req, res) => {
   try {
-    const { studentExamId } = req.params;
-    const { answers } = req.body; // Format: { questionId: "answerText" }
+    const { userId, examId, answers,score } = req.body;
+console.log(req.body)
 
-    const studentExam = await StudentExam.findById(studentExamId).populate('examId');
+    const studentExam = await StudentExam.findOne({ userId, examId }).populate('examId');
+   
     if (!studentExam) return res.status(404).json({ message: 'Student exam not found' });
+    const options = {
+      timeZone: "Europe/Bucharest",
+      weekday: "short",
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    };
 
-    if (new Date() > studentExam.endTime) {
+    // Convert the date strings to Date objects
+    const dateObjendDateTime = new Date(studentExam.endTime);
+
+    // Get the current date and time
+    const currentDate = new Date();
+    const formattedCurrentDate = new Intl.DateTimeFormat("en-US", options).format(currentDate);
+
+    if (formattedCurrentDate > dateObjendDateTime) {
       return res.status(400).json({ message: 'Time for this exam has expired' });
     }
+    if (studentExam.submittedAt) {
+      return res.status(400).json({ message: 'You have already submitted this exam.' });
+    }
 
-    let score = 0;
-    const updatedAnswers = studentExam.examId.questions.map((question) => {
-      const userAnswer = answers[question._id];
-      const isCorrect = userAnswer === question.correctAnswer;
-      if (isCorrect) score++;
-
-      return {
-        questionId: question._id,
-        answerText: studentAnswer?.answerText || '',
-        isCorrect,
-      };
-    });
-
-    studentExam.answers = updatedAnswers;
+    studentExam.answers = answers;
     studentExam.score = score;
-    studentExam.submittedAt = new Date();
+    studentExam.submittedAt = formattedCurrentDate;
     await studentExam.save();
 
     res.status(200).json({ message: 'Exam submitted successfully', score });
   } catch (error) {
+    
     res.status(500).json({ message: 'Error submitting exam', error: error.message });
   }
 };

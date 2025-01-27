@@ -12,20 +12,7 @@ const StudentExamSchema = new mongoose.Schema({
     required: true,
   },
   answers: [
-    {
-      questionId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Exam.questions',
-      },
-      answerText: {
-        type: String,
-        required: true,
-      },
-      isCorrect: {
-        type: Boolean,
-        default: false,
-      },
-    },
+   
   ],
   score: {
     type: Number,
@@ -35,11 +22,11 @@ const StudentExamSchema = new mongoose.Schema({
     type: Date,
   },
   startTime: {
-    type: Date,
+    type: String,
     required: true,
   },
   endTime: {
-    type: Date,
+    type: String,
     required: true,
   },
 }, {
