@@ -1,4 +1,8 @@
 const User = require('../model/User'); // Adjust path as necessary
+const multer = require('multer');
+const bucket = require('../firebase'); // Import the Firebase storage bucket
+const { v4: uuidv4 } = require('uuid');
+const DashboardImage = require('../model/DashboardImages');
 
 exports.suspendUser = async (req, res) => {
   const { userId } = req.params; // The user to be suspended
@@ -102,3 +106,99 @@ exports.ActiveUser = async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }}
   
+exports.updateimage=async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const file = req.file;
+    const fileName = `profileImages/${userId}-${uuidv4()}`;
+    const fileUpload = bucket.file(fileName);
+
+    const blobStream = fileUpload.createWriteStream({
+        metadata: {
+            contentType: file.mimetype
+        },
+        public: true,
+    });
+
+    blobStream.on('error', (error) => {
+        console.error(error);
+        return res.status(500).json({ message: 'Upload failed', error });
+    });
+
+    blobStream.on('finish', async () => {
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+        // Update user profileImage field in MongoDB
+        await User.findByIdAndUpdate(userId, { profileImage: publicUrl }, { new: true });
+
+        return res.status(200).json({ message: 'Image uploaded successfully', imageUrl: publicUrl });
+    });
+
+    blobStream.end(file.buffer);
+} catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
+}
+}
+
+exports.updateImageDB = async (req, res) => {
+  try {
+    console.log(req.body)
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const { type } = req.body; // "adminBg" or "userBg"
+    if (!type || (type !== 'adminBg' && type !== 'userBg')) {
+      return res.status(400).json({ error: 'Invalid type specified' });
+    }
+
+    const file = req.file;
+
+    const fileName = `dashboardImages/${type}-${uuidv4()}`;
+    const fileUpload = bucket.file(fileName);
+
+    const blobStream = fileUpload.createWriteStream({
+      metadata: {
+        contentType: file.mimetype,
+      },
+      public: true,
+    });
+
+    blobStream.on('error', (error) => {
+      console.error(error);
+      return res.status(500).json({ message: 'Upload failed', error });
+    });
+
+    blobStream.on('finish', async () => {
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+      // Update the corresponding background in the database
+      const updateField = type === 'adminBg' ? { adminBg: publicUrl } : { userBg: publicUrl };
+
+      await DashboardImage.findOneAndUpdate({}, updateField, { upsert: true, new: true });
+
+      return res.status(200).json({ message: `${type} uploaded successfully`, imageUrl: publicUrl });
+    });
+
+    blobStream.end(file.buffer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+exports.getImageDB = async (req, res) => {
+  try {
+      const images = await DashboardImage.findOne(); // Assuming only one set of images exists
+      if (!images) {
+          return res.status(404).json({ message: "No dashboard images found" });
+      }
+      res.json(images);
+  } catch (error) {
+      res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
