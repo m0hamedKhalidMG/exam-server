@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../model/User'); 
+const { v4: uuidv4 } = require('uuid');
+const bucket = require('../firebase'); // Import the Firebase storage bucket
 
 // Utility function to generate JWT
 const generateToken = (user) => {
@@ -11,9 +13,14 @@ const generateToken = (user) => {
 };
 
 // Register User
+
 exports.registerUser = async (req, res) => {
   try {
-    const { username, email, password, name, age, country, province, whatsappNumber, profileImage } = req.body;
+    const { username, email, password, name, age, country, province, whatsappNumber } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
 
     // Check if the user already exists
     const userExists = await User.findOne({ email });
@@ -21,43 +28,79 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create new user
-    const newUser = await User.create({
-      username,
-      email,
-      password,
-      name,
-      age,
-      country,
-      province,
-      whatsappNumber,
-      profileImage,
+    // File upload setup
+    const file = req.file;
+    const fileName = `profileImages/${uuidv4()}`;
+    const fileUpload = bucket.file(fileName);
+
+    const blobStream = fileUpload.createWriteStream({
+      metadata: { contentType: file.mimetype },
+      public: true,
     });
 
-    if (newUser) {
-      const token = generateToken(newUser);
-      res.status(201).json({
-        message: 'User registered successfully',
-        user: {
-          id: newUser._id,
-          username: newUser.username,
-          email: newUser.email,
-          role: newUser.role,
-          age:newUser.age,
-          country:newUser.country,
-          province:newUser.province,
-          whatsappNumber:newUser.whatsappNumber,
-          profileImage:newUser.profileImage
-        },
-        token,
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
-    }
+    blobStream.on('error', (error) => {
+      console.error(error);
+      return res.status(500).json({ message: 'Upload failed', error });
+    });
+
+    blobStream.on('finish', async () => {
+      try {
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        
+        // Create new user
+        const newUser = await User.create({
+          username,
+          email,
+          password,
+          name,
+          age,
+          country,
+          province,
+          whatsappNumber,
+          profileImage: publicUrl,
+        });
+
+        if (!newUser) {
+          return res.status(400).json({ message: 'Invalid user data' });
+        }
+
+        const token = generateToken(newUser);
+
+        res.status(201).json({
+          message: 'User registered successfully',
+          user: {
+            id: newUser._id,
+            username: newUser.username,
+            email: newUser.email,
+            role: newUser.role,
+            age: newUser.age,
+            country: newUser.country,
+            province: newUser.province,
+            whatsappNumber: newUser.whatsappNumber,
+            profileImage: newUser.profileImage,
+          },
+          token,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'User creation failed', error: error.message });
+      }
+    });
+
+    blobStream.end(file.buffer); // Ensure the upload process starts
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+
+
+
+
+
+
+
 
 // Login User
 exports.loginUser = async (req, res) => {

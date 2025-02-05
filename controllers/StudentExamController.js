@@ -96,7 +96,7 @@ exports.startExam = async (req, res) => {
 // Submit an exam
 exports.submitExam = async (req, res) => {
   try {
-    const { userId, examId, answers,score } = req.body;
+    const { userId, examId, answers,score,timeexam,total } = req.body;
 console.log(req.body)
 
     const studentExam = await StudentExam.findOne({ userId, examId }).populate('examId');
@@ -127,9 +127,10 @@ console.log(req.body)
     if (studentExam.submittedAt) {
       return res.status(400).json({ message: 'You have already submitted this exam.' });
     }
-
+    studentExam.total=total
     studentExam.answers = answers;
     studentExam.score = score;
+    studentExam.timeexam=timeexam;
     studentExam.submittedAt = formattedCurrentDate;
     await studentExam.save();
 
@@ -144,9 +145,8 @@ console.log(req.body)
 // Fetch exam history
 exports.getExamHistory = async (req, res) => {
     try {
-      const history = await StudentExam.find({ userId: req.user._id })
-        .populate('examId', 'title description') // Populate exam title and description
-        .populate('answers.questionId', 'questionText correctAnswer'); // Populate question text and correct answers
+      const history = await StudentExam.find().populate("userId")
+      
   
       res.status(200).json({ history });
     } catch (error) {

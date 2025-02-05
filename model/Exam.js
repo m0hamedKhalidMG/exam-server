@@ -12,7 +12,7 @@ const ExamSchema = new mongoose.Schema(
     },
     ageGroup: {
       type: String,
-      enum: ['7', '7-10', '10+'],
+      enum: ['7', '8-10', '10+'],
       required: true,
     },
     class: {

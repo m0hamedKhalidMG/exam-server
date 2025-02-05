@@ -18,6 +18,14 @@ const StudentExamSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  timeexam: {
+    type: Number,
+    default: 0,
+  },
+  total: {
+    type: Number,
+    default: 0,
+  },
   submittedAt: {
     type: Date,
   },

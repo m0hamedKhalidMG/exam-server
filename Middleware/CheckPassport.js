@@ -34,6 +34,7 @@ exports.isAuthenticated = (req, res, next) => {
 };
 
 exports.checkIfSuspended = (req, res, next) => {
+  console.log(req.user)
     if (req.user && req.user.stateuser) {
       return res.status(403).json({ message: 'Your account is suspended. Please contact support.' });
     }

@@ -13,7 +13,8 @@ router.get('/getbest', authenticateToken, examController.getscores);
 router.put('/update/:examId', authenticateToken, isAdmin, examController.updateExam);
 router.delete('/delete/:id', authenticateToken, isAdmin, examController.deleteExam);
 router.delete('/:examId/question/:questionIdx',authenticateToken, isAdmin,examController.deleteExamQestion);
- 
+router.get('/history', authenticateToken, isAuthenticated, StudentExamController.getExamHistory);
+
 // Exam Routes
 router.post('/create', authenticateToken, isAdmin, examController.createExam);
 router.get('/', authenticateToken, examController.getAllExams);
@@ -25,6 +26,5 @@ router.post('/start', authenticateToken, StudentExamController.startExam);
 
 // router.post('/submit', authenticateToken, StudentExamController.submitExam);
 router.post('/submit', authenticateToken, isAuthenticated, StudentExamController.submitExam);
-router.get('/history', authenticateToken, isAuthenticated, StudentExamController.getExamHistory);
 
 module.exports = router;
