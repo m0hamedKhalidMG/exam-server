@@ -42,7 +42,7 @@ const UserSchema = new mongoose.Schema({
   whatsappNumber: {
     type: String,
     required: true,
-    match: [/^\+\d{1,3}\d{9,12}$/, 'Please enter a valid WhatsApp number'],
+    match: [/^\d{10,15}$/, 'Please enter a valid WhatsApp number']
   },
   profileImage: {
     type: String,

@@ -6,6 +6,10 @@ const ExamSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    selectExamCategory: {
+      type: String,
+      trim: true,
+    },
     description: {
       type: String,
       trim: true,

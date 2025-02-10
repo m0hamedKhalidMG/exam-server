@@ -79,8 +79,11 @@ exports.createExam = async (req, res) => {
       startDate,
       startTime,
       endDate,
+      selectExamCategory,
       endTime,
     } = req.body;
+    console.log(req.body)
+
     const startDateTimec = `${startDate}T${startTime}:00`; // 'YYYY-MM-DDTHH:MM:SS'
     const endDateTimec = `${endDate}T${endTime}:00`;
     // Create a Date object from the combined string
@@ -121,6 +124,7 @@ exports.createExam = async (req, res) => {
       timer: duration,
       startDateTime,
       endDateTime,
+      selectExamCategory,
       createdBy,
     });
     console.log(newExam)

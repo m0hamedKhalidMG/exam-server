@@ -37,6 +37,10 @@ const StudentExamSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  selectExamCategory: {
+    type: String,
+    required: true,
+  },
 }, {
   timestamps: true,
 });
