@@ -1,5 +1,6 @@
 const Exam = require('../model/Exam');
 const StudentExam = require('../model/StudentExam');
+const { param } = require('../routes/auth');
 
 exports.getAllExamsforstudent = async (req, res) => {
   try {
@@ -17,9 +18,10 @@ exports.getAllExamsforstudent = async (req, res) => {
     const currentDate = new Date();
     const formattedCurrentDate = new Intl.DateTimeFormat("en-US", options).format(currentDate);
     console.log("Current Date:", formattedCurrentDate);
+    const { examId } = req.params;
 
-    const exams = await Exam.find().populate('createdBy', 'username email');
-   
+    const exams = await Exam.find({selectExamCategory:examId}).populate('createdBy', 'username email');
+   console.log(exams)
 
     const filteredExams1 = exams.filter((exam) => new Date(exam.endDateTime) >= currentDate);
     const filteredExams = filteredExams1.filter((exam) => new Date(exam.startDateTime) <= currentDate);
@@ -87,6 +89,7 @@ exports.startExam = async (req, res) => {
     await studentExam.save();
     res.status(201).json({ message: 'Exam started', studentExam });
   } catch (error) {
+    console.log(error.message )
     res.status(500).json({ message: 'Error starting exam', error: error.message });
   }
 };

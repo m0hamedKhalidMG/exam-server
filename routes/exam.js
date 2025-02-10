@@ -7,7 +7,7 @@ const StudentExamController = require('../controllers/StudentExamController');
 const router = express.Router();
 
 
-router.get('/Examsforstudent',authenticateToken, isAuthenticated,checkIfSuspended, StudentExamController.getAllExamsforstudent);
+router.get('/Examsforstudent/:examId',authenticateToken, isAuthenticated,checkIfSuspended, StudentExamController.getAllExamsforstudent);
 router.get('/getbest', authenticateToken, examController.getscores);
 
 router.put('/update/:examId', authenticateToken, isAdmin, examController.updateExam);
